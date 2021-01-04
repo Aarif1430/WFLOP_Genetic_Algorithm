@@ -1,17 +1,10 @@
+from __future__ import print_function   # For Python 3 compatibility
 import numpy as np
+import sys
 from math import radians as DegToRad    # For converting degrees to radians
 
 # Structured datatype for holding coordinate pair
 coordinate = np.dtype([('x', 'f8'), ('y', 'f8')])
-
-
-# choose wind distribution : 6 direction, 1 speed
-def init_6_direction_1_speed_13():
-    theta = np.array([0, np.pi / 3.0, 2 * np.pi / 3.0, 3 * np.pi / 3.0, 4 * np.pi / 3.0, 5 * np.pi / 3.0],
-                          dtype=np.float32)  # 0.2, 0,3 0.2  0. 1 0.1 0.1
-    velocity = np.array([13.0], dtype=np.float32)  # 1
-    f_theta_v = np.array([[0.2], [0.3], [0.2], [0.1], [0.1], [0.1]], dtype=np.float32)
-    return theta, velocity, f_theta_v
 
 
 def WindFrame(turb_coords, wind_dir_deg):
@@ -29,15 +22,16 @@ def WindFrame(turb_coords, wind_dir_deg):
     sin_dir = np.sin(-wind_dir_rad)
     # Convert to downwind(x) & crosswind(y) coordinates
     frame_coords = np.recarray(turb_coords.shape, coordinate)
-    frame_coords.x = (turb_coords[0] * cos_dir) - (turb_coords[1] * sin_dir)
-    frame_coords.y = (turb_coords[0] * sin_dir) + (turb_coords[1] * cos_dir)
+    frame_coords.x = (turb_coords.x * cos_dir) - (turb_coords.y * sin_dir)
+    frame_coords.y = (turb_coords.x * sin_dir) + (turb_coords.y * cos_dir)
 
     return frame_coords
+
 
 def GaussianWake(frame_coords, turb_diam):
     """Return each turbine's total loss due to wake from upstream turbines"""
     # Equations and values explained in <iea37-wakemodel.pdf>
-    num_turb = len(frame_coords[0])
+    num_turb = len(frame_coords)
 
     # Constant thrust coefficient
     CT = 4.0*1./3.*(1.0-1./3.)
@@ -45,12 +39,12 @@ def GaussianWake(frame_coords, turb_diam):
     k = 0.0324555
     # Array holding the wake deficit seen at each turbine
     loss = np.zeros(num_turb)
-    sorted_index = np.argsort(-frame_coords[1, :])
+
     for i in range(num_turb):            # Looking at each turb (Primary)
         loss_array = np.zeros(num_turb)  # Calculate the loss from all others
         for j in range(num_turb):        # Looking at all other turbs (Target)
-            x = np.absolute(frame_coords[0, sorted_index[i]] - frame_coords[0, sorted_index[j]])
-            y = np.absolute(frame_coords[1, sorted_index[i]] - frame_coords[1, sorted_index[j]])
+            x = frame_coords.x[i] - frame_coords.x[j]   # Calculate the x-dist
+            y = frame_coords.y[i] - frame_coords.y[j]   # And the y-offset
             if x > 0.:                   # If Primary is downwind of the Target
                 sigma = k*x + turb_diam/np.sqrt(8.)  # Calculate the wake loss
                 # Simplified Bastankhah Gaussian wake model
@@ -64,18 +58,65 @@ def GaussianWake(frame_coords, turb_diam):
     return loss
 
 
-if __name__=='__main__':
-    xy_positons = np.asarray([[346.5, 1039.5, 115.5, 2194.5, 1501.5, 1732.5, 115.5, 808.5,
-      1501.5, 1963.5, 115.5, 1039.5, 1270.5, 1501.5, 2656.5, 346.5,
-      1039.5, 115.5, 577.5, 2194.5, 2656.5, 346.5, 1039.5, 1501.5,
-      1963.5],
-     [115.5, 115.5, 346.5, 346.5, 577.5, 577.5, 808.5, 808.5,
-      808.5, 808.5, 1039.5, 1039.5, 1039.5, 1039.5, 1039.5, 1270.5,
-      1270.5, 1501.5, 1501.5, 1732.5, 1732.5, 2194.5, 2194.5, 2194.5,
-      2194.5]])
+def DirPower(turb_coords, wind_dir_deg, wind_speed,
+             turb_diam, turb_ci, turb_co, rated_ws, rated_pwr):
+    """Return the power produced by each turbine."""
+    num_turb = len(turb_coords)
 
-    d = 77.0
-    wind_dir_deg, _, _ = init_6_direction_1_speed_13()
-    # frame_coords = WindFrame(xy_positons, wind_dir_deg[0])
-    wake = GaussianWake(xy_positons, d)
-    print('')
+    # Shift coordinate frame of reference to downwind/crosswind
+    frame_coords = WindFrame(turb_coords, wind_dir_deg)
+    # Use the Simplified Bastankhah Gaussian wake model for wake deficits
+    loss = GaussianWake(frame_coords, turb_diam)
+    # Effective windspeed is freestream multiplied by wake deficits
+    wind_speed_eff = wind_speed*(1.-loss)
+    # By default, the turbine's power output is zero
+    turb_pwr = np.zeros(num_turb)
+
+    # Check to see if turbine produces power for experienced wind speed
+    for n in range(num_turb):
+        # If we're between the cut-in and rated wind speeds
+        if ((turb_ci <= wind_speed_eff[n])
+                and (wind_speed_eff[n] < rated_ws)):
+            # Calculate the curve's power
+            turb_pwr[n] = rated_pwr * ((wind_speed_eff[n]-turb_ci)
+                                       / (rated_ws-turb_ci))**3
+        # If we're between the rated and cut-out wind speeds
+        elif ((rated_ws <= wind_speed_eff[n])
+                and (wind_speed_eff[n] < turb_co)):
+            # Produce the rated power
+            turb_pwr[n] = rated_pwr
+
+    # Sum the power from all turbines for this direction
+    pwrDir = np.sum(turb_pwr)
+
+    return pwrDir
+
+
+def init_6_direction_1_speed_13():
+    theta = np.array([0, np.pi / 3.0, 2 * np.pi / 3.0, 3 * np.pi / 3.0, 4 * np.pi / 3.0, 5 * np.pi / 3.0],
+                          dtype=np.float32)  # 0.2, 0,3 0.2  0. 1 0.1 0.1
+    velocity = np.array([13.0], dtype=np.float32)  # 1
+    f_theta_v = np.array([[0.2], [0.3], [0.2], [0.1], [0.1], [0.1]], dtype=np.float32)
+    return theta, velocity, f_theta_v
+
+
+if __name__ == "__main__":
+    wind_dir, _, _ = init_6_direction_1_speed_13()
+    x_coords = [1270.5, 2194.5,  346.5, 1732.5, 2425.5,  346.5, 2194.5, 2425.5,
+                                 115.5,  346.5,  808.5, 1039.5,  577.5, 1501.5, 1732.5, 1963.5,
+                                1732.5, 2194.5, 2425.5,  346.5,  577.5, 1039.5, 1501.5, 2425.5,
+                                1501.5]
+    y_coords = [ 115.5,  115.5,  346.5,  577.5,  577.5,  808.5,  808.5,  808.5,
+                                1039.5, 1039.5, 1039.5, 1039.5, 1270.5, 1270.5, 1270.5, 1270.5,
+                                1732.5, 1732.5, 1732.5, 1963.5, 1963.5, 1963.5, 1963.5, 1963.5,
+                                2194.5]
+    turb_coords = np.asarray(list(zip(x_coords, y_coords))).shape
+    turb_coords = np.recarray((25,), coordinate)
+    turb_coords.x, turb_coords.y = x_coords, y_coords
+
+    loss = GaussianWake(turb_coords, 77.0)
+    print(loss)
+
+
+
+
