@@ -119,7 +119,3 @@ if __name__ == "__main__":
 
     loss = GaussianWake(turb_coords, 77.0)
     print(loss)
-
-
-
-
