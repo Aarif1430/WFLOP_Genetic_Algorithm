@@ -95,16 +95,13 @@ def DirPower(turb_coords, wind_dir_deg, wind_speed,
     return pwrDir
 
 
-def init_6_direction_1_speed_13():
-    theta = np.array([0, np.pi / 3.0, 2 * np.pi / 3.0, 3 * np.pi / 3.0, 4 * np.pi / 3.0, 5 * np.pi / 3.0],
-                          dtype=np.float32)  # 0.2, 0,3 0.2  0. 1 0.1 0.1
-    velocity = np.array([13.0], dtype=np.float32)  # 1
-    f_theta_v = np.array([[0.2], [0.3], [0.2], [0.1], [0.1], [0.1]], dtype=np.float32)
-    return theta, velocity, f_theta_v
-
 
 if __name__ == "__main__":
-    wind_dir, _, _ = init_6_direction_1_speed_13()
+
+    wind_dir = np.array([0, np.pi / 3.0, 2 * np.pi / 3.0, 3 * np.pi / 3.0, 4 * np.pi / 3.0, 5 * np.pi / 3.0],
+                     dtype=np.float32)  # 0.2, 0,3 0.2  0. 1 0.1 0.1
+    velocity = np.array([13.0], dtype=np.float32)  # 1
+    f_theta_v = np.array([[0.2], [0.3], [0.2], [0.1], [0.1], [0.1]], dtype=np.float32)
     x_coords = [1270.5, 2194.5,  346.5, 1732.5, 2425.5,  346.5, 2194.5, 2425.5,
                                  115.5,  346.5,  808.5, 1039.5,  577.5, 1501.5, 1732.5, 1963.5,
                                 1732.5, 2194.5, 2425.5,  346.5,  577.5, 1039.5, 1501.5, 2425.5,
