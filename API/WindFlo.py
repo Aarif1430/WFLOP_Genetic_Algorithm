@@ -28,10 +28,13 @@ def WindFrame(turb_coords, wind_dir_deg):
     return frame_coords
 
 
-def GaussianWake(frame_coords, turb_diam):
+def GaussianWake(frame_coords, N, turb_diam):
     """Return each turbine's total loss due to wake from upstream turbines"""
     # Equations and values explained in <iea37-wakemodel.pdf>
-    num_turb = len(frame_coords)
+    turb_coords = np.asarray(list(zip(list(frame_coords[0]), list(frame_coords[1]))))
+    turb_coords = np.recarray((25,), coordinate)
+    turb_coords.x, turb_coords.y = frame_coords[0], frame_coords[1]
+    num_turb = N
 
     # Constant thrust coefficient
     CT = 4.0*1./3.*(1.0-1./3.)
@@ -43,8 +46,8 @@ def GaussianWake(frame_coords, turb_diam):
     for i in range(num_turb):            # Looking at each turb (Primary)
         loss_array = np.zeros(num_turb)  # Calculate the loss from all others
         for j in range(num_turb):        # Looking at all other turbs (Target)
-            x = frame_coords.x[i] - frame_coords.x[j]   # Calculate the x-dist
-            y = frame_coords.y[i] - frame_coords.y[j]   # And the y-offset
+            x = turb_coords.x[i] - turb_coords.x[j]   # Calculate the x-dist
+            y = turb_coords.y[i] - turb_coords.y[j]   # And the y-offset
             if x > 0.:                   # If Primary is downwind of the Target
                 sigma = k*x + turb_diam/np.sqrt(8.)  # Calculate the wake loss
                 # Simplified Bastankhah Gaussian wake model
@@ -110,7 +113,7 @@ if __name__ == "__main__":
                                 1039.5, 1039.5, 1039.5, 1039.5, 1270.5, 1270.5, 1270.5, 1270.5,
                                 1732.5, 1732.5, 1732.5, 1963.5, 1963.5, 1963.5, 1963.5, 1963.5,
                                 2194.5]
-    turb_coords = np.asarray(list(zip(x_coords, y_coords))).shape
+    turb_coords = np.asarray(list(zip(x_coords, y_coords)))
     turb_coords = np.recarray((25,), coordinate)
     turb_coords.x, turb_coords.y = x_coords, y_coords
 
