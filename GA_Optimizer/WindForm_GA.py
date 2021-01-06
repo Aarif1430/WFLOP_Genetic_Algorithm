@@ -6,6 +6,7 @@ import time
 from API.WindFlo import *
 from datetime import datetime
 
+
 class WindFarmGenetic(object):
     elite_rate = 0.2    # elite rate: parameter for genetic algorithm
     cross_rate = 0.6    # crossover rate: parameter for genetic algorithm
@@ -65,6 +66,7 @@ class WindFarmGenetic(object):
 
     def gen_init_pop(self):
         self.init_pop = self.gen_pop(self.rows, self.cols, self.pop_size, self.N)
+        # init_pop_nonezero_indices: Tracks the cells in layout where turbine is placed
         self.init_pop_nonezero_indices = np.zeros((self.pop_size, self.N), dtype=np.int32)
         for ind_init_pop in range(self.pop_size):
             ind_indices = 0
