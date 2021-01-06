@@ -6,7 +6,6 @@ import time
 from API.WindFlo import *
 from datetime import datetime
 
-
 class WindFarmGenetic(object):
     elite_rate = 0.2    # elite rate: parameter for genetic algorithm
     cross_rate = 0.6    # crossover rate: parameter for genetic algorithm
@@ -31,7 +30,7 @@ class WindFarmGenetic(object):
         self.velocity = np.array([13.0], dtype=np.float32)  # 1
         self.theta = np.array([0, np.pi / 3.0, 2 * np.pi / 3.0, 3 * np.pi / 3.0, 4 * np.pi / 3.0, 5 * np.pi / 3.0],
                               dtype=np.float32)  # 0.2, 0,3 0.2  0. 1 0.1 0.1
-        self.turbine = GE_1_5_sleTurbine()
+        self.turbine = Turbine()
         self.rows = rows
         self.cols = cols
         self.N = N
@@ -55,13 +54,13 @@ class WindFarmGenetic(object):
         f_p = 0.0
         for ind_t in range(len(self.theta)):
             for ind_v in range(len(self.velocity)):
-                f_p += self.f_theta_v[ind_t, ind_v] * self.turbine.P_i_X(self.velocity[ind_v])
+                f_p += self.f_theta_v[ind_t, ind_v] * self.turbine.get_power_output(self.velocity[ind_v])
         return self.N * f_p
 
     def layout_power(self, velocity, N):
         power = np.zeros(N, dtype=np.float32)
         for i in range(N):
-            power[i] = self.turbine.P_i_X(velocity[i])
+            power[i] = self.turbine.get_power_output(velocity[i])
         return power
 
     def gen_init_pop(self):
@@ -244,28 +243,37 @@ class WindFarmGenetic(object):
         return run_time, eta_generations[self.iteration - 1]
 
 
-class GE_1_5_sleTurbine:
-    hub_height = 80.0  # unit (m)
-    rator_diameter = 77.0  # unit m
+class Turbine:
+    """
+        'manufacturer': 'Enercon',
+        'name': 'E-126/4200 EP4',
+        'turbine_type': 'E-126/4200',
+        'nominal_power': 4200,
+        Usage:
+            from misc import *
+            data=fetch_turbine_data_from_oedb()
+            print(dict(t.iloc[1]))
+    """
+    hub_height = 99.0  # unit (m)
+    rator_diameter = 127.0  # unit m
     surface_roughness = 0.25 * 0.001  # unit mm surface roughness
-    # surface_roughness = 0.25  # unit mm surface roughness
     rator_radius = 0
-
+    power_density = 3
+    power_curve_wind_speeds = np.arange(1,26)
+    power_curve_values = [0.0, 0.0, 58.0, 185.0, 400.0, 745.0, 1200.0, 1790.0, 2450.0, 3120.0, 3660.0, 4000.0, 4150.0, 4200.0, 4200.0, 4200.0, 4200.0, 4200.0, 4200.0, 4200.0, 4200.0, 4200.0, 4200.0, 4200.0, 4200.0]
     entrainment_const = 0
 
     def __init__(self):
         self.rator_radius = self.rator_diameter / 2
         self.entrainment_const = 0.5 / np.log(self.hub_height / self.surface_roughness)
-        return
 
-    # power curve
-    def P_i_X(self, v):
-        if v < 2.0:
-            return 0
-        elif v < 12.8:
-            return 0.3 * v ** 3
-        elif v < 18:
-            return 629.1
-        else:
-            return 0
+    def get_power_output(self, wind_speed):
+        power_output = np.interp(
+            wind_speed,
+            self.power_curve_wind_speeds,
+            self.power_curve_values,
+            left=0,
+            right=0,
+        )
+        return power_output
 

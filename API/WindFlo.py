@@ -7,27 +7,6 @@ from math import radians as DegToRad    # For converting degrees to radians
 coordinate = np.dtype([('x', 'f8'), ('y', 'f8')])
 
 
-def WindFrame(turb_coords, wind_dir_deg):
-    """Convert map coordinates to downwind/crosswind coordinates."""
-
-    # Convert from meteorological polar system (CW, 0 deg.=N)
-    # to standard polar system (CCW, 0 deg.=W)
-    # Shift so North comes "along" x-axis, from left to right.
-    wind_dir_deg = 270. - wind_dir_deg
-    # Convert inflow wind direction from degrees to radians
-    wind_dir_rad = DegToRad(wind_dir_deg)
-
-    # Constants to use below
-    cos_dir = np.cos(-wind_dir_rad)
-    sin_dir = np.sin(-wind_dir_rad)
-    # Convert to downwind(x) & crosswind(y) coordinates
-    frame_coords = np.recarray(turb_coords.shape, coordinate)
-    frame_coords.x = (turb_coords.x * cos_dir) - (turb_coords.y * sin_dir)
-    frame_coords.y = (turb_coords.x * sin_dir) + (turb_coords.y * cos_dir)
-
-    return frame_coords
-
-
 def GaussianWake(frame_coords, N, turb_diam):
     """Return each turbine's total loss due to wake from upstream turbines"""
     # Equations and values explained in <iea37-wakemodel.pdf>
@@ -59,41 +38,6 @@ def GaussianWake(frame_coords, N, turb_diam):
         loss[i] = np.sqrt(np.sum(loss_array**2))
 
     return loss
-
-
-def DirPower(turb_coords, wind_dir_deg, wind_speed,
-             turb_diam, turb_ci, turb_co, rated_ws, rated_pwr):
-    """Return the power produced by each turbine."""
-    num_turb = len(turb_coords)
-
-    # Shift coordinate frame of reference to downwind/crosswind
-    frame_coords = WindFrame(turb_coords, wind_dir_deg)
-    # Use the Simplified Bastankhah Gaussian wake model for wake deficits
-    loss = GaussianWake(frame_coords, turb_diam)
-    # Effective windspeed is freestream multiplied by wake deficits
-    wind_speed_eff = wind_speed*(1.-loss)
-    # By default, the turbine's power output is zero
-    turb_pwr = np.zeros(num_turb)
-
-    # Check to see if turbine produces power for experienced wind speed
-    for n in range(num_turb):
-        # If we're between the cut-in and rated wind speeds
-        if ((turb_ci <= wind_speed_eff[n])
-                and (wind_speed_eff[n] < rated_ws)):
-            # Calculate the curve's power
-            turb_pwr[n] = rated_pwr * ((wind_speed_eff[n]-turb_ci)
-                                       / (rated_ws-turb_ci))**3
-        # If we're between the rated and cut-out wind speeds
-        elif ((rated_ws <= wind_speed_eff[n])
-                and (wind_speed_eff[n] < turb_co)):
-            # Produce the rated power
-            turb_pwr[n] = rated_pwr
-
-    # Sum the power from all turbines for this direction
-    pwrDir = np.sum(turb_pwr)
-
-    return pwrDir
-
 
 
 if __name__ == "__main__":
