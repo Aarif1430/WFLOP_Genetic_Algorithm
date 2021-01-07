@@ -2,7 +2,6 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
-from numpy import linalg as LA
 import time
 from API.WindFlo import *
 from datetime import datetime
@@ -227,7 +226,7 @@ class GAOptimizer(object):
             self.mutation(rows=self.rows, cols=self.cols, N=self.N, pop=pop, pop_indices=pop_indices,
                           pop_size=self.pop_size, mutation_rate=self.mutate_rate)
 
-            print("Conversion efficiency is: %d" % (fitness_generations[gen] / total_rated_power))
+            print("Conversion efficiency is: %f" % (fitness_generations[gen] / total_rated_power))
             conversion_eff.append((fitness_generations[gen] / total_rated_power))
 
         end_time = datetime.now()
@@ -269,37 +268,3 @@ class Turbine(object):
             right=0,
         )
         return power_output
-
-
-def fmt(x_in, pos):
-    return str('{0:.2f}'.format(x_in))
-
-
-def plot_turbines(xc, yc, pow, fig, plotVariable='V', scale=1.0, title=''):
-    ax = plt.subplot(1, 1, 1)
-
-    ax.set_xlabel('x [m]', fontsize=16, labelpad=5)
-    ax.set_ylabel('y [m]', fontsize=16, labelpad=5)
-
-    ax.tick_params(axis='x', which='major', labelsize=15, pad=0)
-    ax.tick_params(axis='y', which='major', labelsize=15, pad=0)
-
-    x = xc
-    y = yc
-    var = pow
-
-    jet_map = plt.get_cmap('jet')
-    scatterPlot = ax.scatter(x, y, c=var, marker='^', s=100, cmap=jet_map, alpha=1)
-
-    if (max(var) - min(var)) > 0:
-        colorTicks = np.linspace(min(var), max(var), 7, endpoint=True)
-        colorBar = plt.colorbar(scatterPlot, pad=0.06, shrink=0.8, format=ticker.FuncFormatter(fmt), ticks=colorTicks)
-
-        colorBar.ax.tick_params(labelsize=16)
-        colorBar.ax.set_title(title, fontsize=16, ha='left', pad=15)
-        colorBar.update_ticks()
-
-    plt.locator_params(axis='x', nbins=6)
-    plt.locator_params(axis='y', nbins=6)
-    plt.tight_layout()
-    return ax

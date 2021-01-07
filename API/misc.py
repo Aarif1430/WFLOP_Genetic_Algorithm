@@ -1,6 +1,9 @@
 import pandas as pd
 import requests
 import matplotlib.pyplot as plt
+from numpy import linalg as LA
+from matplotlib import gridspec
+import numpy as np
 import os
 
 plt.style.use('ggplot')
@@ -70,4 +73,51 @@ def plot_power_curve():
     plt.savefig(f'{parent_dir}/{plots_folder}/Turbine Power Curve.png')
 
 
-plot_power_curve()
+def fmt(x_in, pos):
+    return str('{0:.2f}'.format(x_in))
+
+
+def plot_turbines(xc, yc, pow, plotVariable='V', scale=1.0, title=''):
+    plt.figure(figsize=(8, 5), edgecolor='gray', linewidth=2)
+    ax = plt.subplot(1, 1, 1)
+    ax.title.set_text('Optimized turbine positions')
+    ax.set_xlabel('x [m]', fontsize=16, labelpad=5)
+    ax.set_ylabel('y [m]', fontsize=16, labelpad=5)
+
+    ax.tick_params(axis='x', which='major', labelsize=15, pad=0)
+    ax.tick_params(axis='y', which='major', labelsize=15, pad=0)
+
+    x = xc
+    y = yc
+    var = pow
+
+    jet_map = plt.get_cmap('jet')
+    scatterPlot = ax.scatter(x, y, c=var, marker='^', s=100, cmap=jet_map, alpha=1)
+
+    if (max(var) - min(var)) > 0:
+        colorTicks = np.linspace(min(var), max(var), 7, endpoint=True)
+        colorBar = plt.colorbar(scatterPlot, pad=0.06, shrink=0.8, format=ticker.FuncFormatter(fmt), ticks=colorTicks)
+
+        colorBar.ax.tick_params(labelsize=16)
+        colorBar.ax.set_title(title, fontsize=16, ha='left', pad=15)
+        colorBar.update_ticks()
+
+    plt.locator_params(axis='x', nbins=6)
+    plt.locator_params(axis='y', nbins=6)
+    plt.tight_layout()
+    return ax
+
+
+# Generic Plot function
+def generic_plot(x, y):
+    plt.figure(figsize=(8, 5))
+    plt.plot(x, y)
+    plt.title('Avg. Fitness Vs. Generations')
+    plt.xlabel('Generations')
+    plt.ylabel('Avg. Fitness')
+    plt.grid(True, linewidth=0.7, color='#ff0000', linestyle='-')
+    plt.show()
+
+
+if __name__ == '__main__':
+    plot_power_curve()

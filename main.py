@@ -1,5 +1,5 @@
-import os
 from API.WindFlo import *
+from API.misc import *
 from GA_Optimizer.WindForm_GA import *
 
 elite_rate = 0.2
@@ -28,4 +28,8 @@ optimizer = GAOptimizer(rows=rows_cells, cols=cols_cells, N=number_of_turbines,
 optimizer.gen_init_pop()
 
 run_time, conversion_eff, final_positions = optimizer.evolve()
+
+# Plot for single experiment
+generic_plot(range(len(conversion_eff)), conversion_eff)
+
 print('')
