@@ -1,7 +1,5 @@
 from __future__ import print_function   # For Python 3 compatibility
 import numpy as np
-import sys
-from math import radians as DegToRad    # For converting degrees to radians
 
 # Structured datatype for holding coordinate pair
 coordinate = np.dtype([('x', 'f8'), ('y', 'f8')])
@@ -11,7 +9,7 @@ def GaussianWake(frame_coords, N, turb_diam):
     """Return each turbine's total loss due to wake from upstream turbines"""
     # Equations and values explained in doi:10.1088/1742-6596/1037/4/042012
     turb_coords = np.asarray(list(zip(list(frame_coords[0]), list(frame_coords[1]))))
-    turb_coords = np.recarray((25,), coordinate)
+    turb_coords = np.recarray((N,), coordinate)
     turb_coords.x, turb_coords.y = frame_coords[0], frame_coords[1]
     num_turb = N
 

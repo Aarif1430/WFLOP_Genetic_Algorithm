@@ -1,29 +1,26 @@
 import math
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
+import matplotlib.ticker as ticker
+from numpy import linalg as LA
 import time
 from API.WindFlo import *
 from datetime import datetime
 
 
-class WindFarmGenetic(object):
-    elite_rate = 0.2    # elite rate: parameter for genetic algorithm
-    cross_rate = 0.6    # crossover rate: parameter for genetic algorithm
-    random_rate = 0.5   # random rate: parameter for genetic algorithm
-    mutate_rate = 0.1   # mutation rate: parameter for genetic algorithm
+class GAOptimizer(object):
+    elite_rate = 0.2  # elite rate: parameter for genetic algorithm
+    cross_rate = 0.6  # crossover rate: parameter for genetic algorithm
+    random_rate = 0.5  # random rate: parameter for genetic algorithm
+    mutate_rate = 0.1  # mutation rate: parameter for genetic algorithm
     turbine = None
-    pop_size = 0    # population size : how many individuals in a population
-    N = 0           # number of wind turbines
-    rows = 0        # how many cell rows the wind farm are divided into
-    cols = 0        # how many colus the wind farm land are divided into
-    iteration = 0   # how many iterations the genetic algorithm run
+    pop_size = 0  # population size : how many individuals in a population
+    N = 0  # number of wind turbines
+    rows = 0  # how many cell rows the wind farm are divided into
+    cols = 0  # how many colus the wind farm land are divided into
+    iteration = 0  # how many iterations the genetic algorithm run
     cell_width = 0  # cell width
     cell_width_half = 0  # half cell width
-    turb_ci = 4.0
-    turb_co = 25.0
-    rated_ws = 9.8
-    rated_pwr = 3350000
 
     def __init__(self, rows=21, cols=21, N=0, pop_size=100, iteration=20, cell_width=0, elite_rate=0.2,
                  cross_rate=0.6, random_rate=0.5, mutate_rate=0.1):
@@ -51,7 +48,7 @@ class WindFarmGenetic(object):
         self.init_pop_nonezero_indices = None
 
     # calculate total rate power
-    def cal_P_rate_total(self):
+    def get_total_power(self):
         f_p = 0.0
         for ind_t in range(len(self.theta)):
             for ind_v in range(len(self.velocity)):
@@ -115,7 +112,7 @@ class WindFarmGenetic(object):
             pop_indices[i, :] = np.sort(pop_indices[i, :])
 
     def crossover(self, N, pop, pop_indices, pop_size, n_parents,
-                               parent_layouts, parent_pop_indices):
+                  parent_layouts, parent_pop_indices):
         n_counter = 0
         np.random.seed(seed=int(time.time()))  # init random seed
         while n_counter < pop_size:
@@ -147,11 +144,9 @@ class WindFarmGenetic(object):
         parent_pop_indices = pop_indices[parents_ind, :]
         return len(parent_pop_indices), parent_layouts, parent_pop_indices
 
-    def fitness(self, pop, rows, cols, pop_size, N, po):
+    def fitness(self, pop, rows, cols, pop_size, N):
         fitness_val = np.zeros(pop_size, dtype=np.float32)
         for i in range(pop_size):
-
-            # layout = np.reshape(pop[i, :], newshape=(rows, cols))
             xy_position = np.zeros((2, N), dtype=np.float32)  # x y position
             cr_position = np.zeros((2, N), dtype=np.int32)  # column row position
             ind_position = np.zeros(N, dtype=np.int32)
@@ -179,36 +174,30 @@ class WindFarmGenetic(object):
 
                     actual_velocity = (1 - speed_deficiency) * self.velocity[ind_v]
                     lp_power = self.layout_power(actual_velocity,
-                                                     N)  # total power of a specific layout specific wind speed specific theta
+                                                 N)  # total power of a specific layout specific wind speed specific theta
                     lp_power = lp_power * self.f_theta_v[ind_t, ind_v]
                     lp_power_accum += lp_power
 
-            sorted_index = np.argsort(lp_power_accum)  # power from least to largest
-            po[i, :] = ind_position[sorted_index]
             fitness_val[i] = np.sum(lp_power_accum)
-        return fitness_val
+        return fitness_val, xy_position
 
-    def genetic_alg(self, ind_time=0,result_folder=None):
-        P_rate_total = self.cal_P_rate_total()
+    def evolve(self):
+        conversion_eff = []
+        total_rated_power = self.get_total_power()
         start_time = datetime.now()
         print("Genetic algorithm starts....")
         fitness_generations = np.zeros(self.iteration, dtype=np.float32)  # best fitness value in each generation
-        best_layout_generations = np.zeros((self.iteration, self.rows * self.cols), dtype=np.int32)  # best layout in each generation
+        best_layout_generations = np.zeros((self.iteration, self.rows * self.cols),
+                                           dtype=np.int32)  # best layout in each generation
         self.zeros = np.zeros((self.pop_size, self.N), dtype=np.int32)
-        power_order = self.zeros  # each row is a layout cell indices. in each layout, order turbine power from least to largest
+        power_order = self.zeros
         pop = np.copy(self.init_pop)
         pop_indices = np.copy(self.init_pop_nonezero_indices)  # each row is a layout cell indices.
 
-        eN = int(np.floor(self.pop_size * self.elite_rate))  # elite number
-        rN = int(int(np.floor(self.pop_size * self.mutate_rate)) / eN) * eN  # reproduce number
-        mN = rN  # mutation number
-        cN = self.pop_size - eN - mN  # crossover number
-
         for gen in range(self.iteration):
             print("generation {}...".format(gen))
-            fitness_value = self.fitness(pop=pop, rows=self.rows, cols=self.cols, pop_size=self.pop_size,
-                                                      N=self.N,
-                                                      po=power_order)
+            fitness_value, xy_positions = self.fitness(pop=pop, rows=self.rows, cols=self.cols,
+                                                       pop_size=self.pop_size, N=self.N)
             sorted_index = np.argsort(-fitness_value)  # fitness value descending from largest to least
 
             pop = pop[sorted_index, :]
@@ -235,17 +224,18 @@ class WindFarmGenetic(object):
                            n_parents=n_parents, parent_layouts=parent_layouts,
                            parent_pop_indices=parent_pop_indices)
 
-            self.mutation(rows=self.rows, cols=self.cols, N=self.N, pop=pop,pop_indices=pop_indices,
+            self.mutation(rows=self.rows, cols=self.cols, N=self.N, pop=pop, pop_indices=pop_indices,
                           pop_size=self.pop_size, mutation_rate=self.mutate_rate)
+
+            print("Conversion efficiency is: %d" % (fitness_generations[gen] / total_rated_power))
+            conversion_eff.append((fitness_generations[gen] / total_rated_power))
 
         end_time = datetime.now()
         run_time = (end_time - start_time).total_seconds()
-        eta_generations = np.copy(fitness_generations)
-        eta_generations = eta_generations * (1.0 / P_rate_total)
-        return run_time, eta_generations[self.iteration - 1]
+        return run_time, conversion_eff, xy_positions
 
 
-class Turbine:
+class Turbine(object):
     """
         'manufacturer': 'Enercon',
         'name': 'E-126/4200 EP4',
@@ -261,13 +251,14 @@ class Turbine:
     surface_roughness = 0.25 * 0.001  # unit mm surface roughness
     rator_radius = 0
     power_density = 3
-    power_curve_wind_speeds = np.arange(1,26)
-    power_curve_values = [0.0, 0.0, 58.0, 185.0, 400.0, 745.0, 1200.0, 1790.0, 2450.0, 3120.0, 3660.0, 4000.0, 4150.0, 4200.0, 4200.0, 4200.0, 4200.0, 4200.0, 4200.0, 4200.0, 4200.0, 4200.0, 4200.0, 4200.0, 4200.0]
-    entrainment_const = 0
+    power_curve_wind_speeds = np.arange(1, 26)
+    # These values are from API fetch_turbine_data_from_oedb() which is in misc.py
+    power_curve_values = [0.0, 0.0, 58.0, 185.0, 400.0, 745.0, 1200.0, 1790.0, 2450.0, 3120.0, 3660.0, 4000.0, 4150.0,
+                          4200.0, 4200.0, 4200.0, 4200.0, 4200.0, 4200.0, 4200.0, 4200.0, 4200.0, 4200.0, 4200.0,
+                          4200.0]
 
     def __init__(self):
         self.rator_radius = self.rator_diameter / 2
-        self.entrainment_const = 0.5 / np.log(self.hub_height / self.surface_roughness)
 
     def get_power_output(self, wind_speed):
         power_output = np.interp(
@@ -279,3 +270,36 @@ class Turbine:
         )
         return power_output
 
+
+def fmt(x_in, pos):
+    return str('{0:.2f}'.format(x_in))
+
+
+def plot_turbines(xc, yc, pow, fig, plotVariable='V', scale=1.0, title=''):
+    ax = plt.subplot(1, 1, 1)
+
+    ax.set_xlabel('x [m]', fontsize=16, labelpad=5)
+    ax.set_ylabel('y [m]', fontsize=16, labelpad=5)
+
+    ax.tick_params(axis='x', which='major', labelsize=15, pad=0)
+    ax.tick_params(axis='y', which='major', labelsize=15, pad=0)
+
+    x = xc
+    y = yc
+    var = pow
+
+    jet_map = plt.get_cmap('jet')
+    scatterPlot = ax.scatter(x, y, c=var, marker='^', s=100, cmap=jet_map, alpha=1)
+
+    if (max(var) - min(var)) > 0:
+        colorTicks = np.linspace(min(var), max(var), 7, endpoint=True)
+        colorBar = plt.colorbar(scatterPlot, pad=0.06, shrink=0.8, format=ticker.FuncFormatter(fmt), ticks=colorTicks)
+
+        colorBar.ax.tick_params(labelsize=16)
+        colorBar.ax.set_title(title, fontsize=16, ha='left', pad=15)
+        colorBar.update_ticks()
+
+    plt.locator_params(axis='x', nbins=6)
+    plt.locator_params(axis='y', nbins=6)
+    plt.tight_layout()
+    return ax
