@@ -1,6 +1,7 @@
 from API.WindFlo import *
 from API.misc import *
 from GA_Optimizer.WindForm_GA import *
+import numpy as np
 
 elite_rate = 0.2
 cross_rate = 0.6
@@ -34,4 +35,13 @@ generic_plot(range(len(conversion_eff)), conversion_eff)
 
 # Plot layout best positions
 plot_turbines(final_positions[0], final_positions[1], layout_power, scale = 1.0e-3, title = 'P [kW]')
-print('')
+
+# Effect on optimisation performance by choosing random population
+random_pop_performance = []
+for _ in range(10):
+    optimizer.gen_init_pop()
+    run_time, conversion_eff, final_positions, layout_power = optimizer.evolve()
+    random_pop_performance.append(np.mean(conversion_eff))
+
+# Plot for average performances
+generic_plot(range(len(random_pop_performance)), random_pop_performance)
