@@ -33,5 +33,5 @@ run_time, conversion_eff, final_positions, layout_power = optimizer.evolve()
 generic_plot(range(len(conversion_eff)), conversion_eff)
 
 # Plot layout best positions
-plot_turbines(final_positions[0], final_positions[1], layout_power)
+plot_turbines(final_positions[0], final_positions[1], layout_power, scale = 1.0e-3, title = 'P [kW]')
 print('')
