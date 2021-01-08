@@ -1,36 +1,19 @@
-import math
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
 import time
 from API.WindFlo import *
 from datetime import datetime
 
 
 class GAOptimizer(object):
-    elite_rate = 0.2  # elite rate: parameter for genetic algorithm
-    cross_rate = 0.6  # crossover rate: parameter for genetic algorithm
-    random_rate = 0.5  # random rate: parameter for genetic algorithm
-    mutate_rate = 0.1  # mutation rate: parameter for genetic algorithm
-    turbine = None
-    pop_size = 0  # population size : how many individuals in a population
-    N = 0  # number of wind turbines
-    rows = 0  # how many cell rows the wind farm are divided into
-    cols = 0  # how many colus the wind farm land are divided into
-    iteration = 0  # how many iterations the genetic algorithm run
-    cell_width = 0  # cell width
-    cell_width_half = 0  # half cell width
-
-    def __init__(self, rows=21, cols=21, N=0, pop_size=100, iteration=20, cell_width=0, elite_rate=0.2,
+    def __init__(self, rows=21, cols=21, no_of_turbines=0, pop_size=100, iteration=20, cell_width=0, elite_rate=0.2,
                  cross_rate=0.6, random_rate=0.5, mutate_rate=0.1):
         self.f_theta_v = np.array([[0.2], [0.3], [0.2], [0.1], [0.1], [0.1]], dtype=np.float32)
         self.velocity = np.array([13.0], dtype=np.float32)  # 1
         self.theta = np.array([0, np.pi / 3.0, 2 * np.pi / 3.0, 3 * np.pi / 3.0, 4 * np.pi / 3.0, 5 * np.pi / 3.0],
-                              dtype=np.float32)  # 0.2, 0,3 0.2  0. 1 0.1 0.1
+                              dtype=np.float32)
         self.turbine = Turbine()
         self.rows = rows
         self.cols = cols
-        self.N = N
+        self.no_of_turbines = no_of_turbines
         self.pop_size = pop_size
         self.iteration = iteration
 
@@ -52,18 +35,18 @@ class GAOptimizer(object):
         for ind_t in range(len(self.theta)):
             for ind_v in range(len(self.velocity)):
                 f_p += self.f_theta_v[ind_t, ind_v] * self.turbine.get_power_output(self.velocity[ind_v])
-        return self.N * f_p
+        return self.no_of_turbines * f_p
 
-    def layout_power(self, velocity, N):
-        power = np.zeros(N, dtype=np.float32)
-        for i in range(N):
-            power[i] = self.turbine.get_power_output(velocity[i])
+    def layout_power(self, wind_speed, no_of_turbines):
+        power = np.zeros(no_of_turbines, dtype=np.float32)
+        for i in range(no_of_turbines):
+            power[i] = self.turbine.get_power_output(wind_speed[i])
         return power
 
     def gen_init_pop(self):
-        self.init_pop = self.gen_pop(self.rows, self.cols, self.pop_size, self.N)
-        # init_pop_nonezero_indices: Tracks the cells in layout where turbine is placed
-        self.init_pop_nonezero_indices = np.zeros((self.pop_size, self.N), dtype=np.int32)
+        self.init_pop = self.gen_pop(self.rows, self.cols, self.pop_size, self.no_of_turbines)
+        # init_pop_nonzero_indices: Tracks the cells in layout where turbine is placed
+        self.init_pop_nonezero_indices = np.zeros((self.pop_size, self.no_of_turbines), dtype=np.int32)
         for ind_init_pop in range(self.pop_size):
             ind_indices = 0
             for ind in range(self.rows * self.cols):
@@ -169,7 +152,7 @@ class GAOptimizer(object):
                         np.float32)
 
                     trans_xy_position = np.matmul(trans_matrix, xy_position)
-                    speed_deficiency = GaussianWake(trans_xy_position, N, self.turbine.rator_diameter)
+                    speed_deficiency = simplified_gaussian_wake(trans_xy_position, N, self.turbine.rator_diameter)
 
                     actual_velocity = (1 - speed_deficiency) * self.velocity[ind_v]
                     lp_power = self.layout_power(actual_velocity,
@@ -178,25 +161,27 @@ class GAOptimizer(object):
                     lp_power_accum += lp_power
 
             fitness_val[i] = np.sum(lp_power_accum)
-        return fitness_val, xy_position
+        return fitness_val, xy_position, lp_power_accum
 
     def evolve(self):
         conversion_eff = []
+        xy_positions = 0
+        lp_power = 0
         total_rated_power = self.get_total_power()
         start_time = datetime.now()
         print("Genetic algorithm starts....")
         fitness_generations = np.zeros(self.iteration, dtype=np.float32)  # best fitness value in each generation
         best_layout_generations = np.zeros((self.iteration, self.rows * self.cols),
                                            dtype=np.int32)  # best layout in each generation
-        self.zeros = np.zeros((self.pop_size, self.N), dtype=np.int32)
+        self.zeros = np.zeros((self.pop_size, self.no_of_turbines), dtype=np.int32)
         power_order = self.zeros
         pop = np.copy(self.init_pop)
         pop_indices = np.copy(self.init_pop_nonezero_indices)  # each row is a layout cell indices.
 
         for gen in range(self.iteration):
             print("generation {}...".format(gen))
-            fitness_value, xy_positions = self.fitness(pop=pop, rows=self.rows, cols=self.cols,
-                                                       pop_size=self.pop_size, N=self.N)
+            fitness_value, xy_positions, lp_power = self.fitness(pop=pop, rows=self.rows, cols=self.cols,
+                                                                 pop_size=self.pop_size, N=self.no_of_turbines)
             sorted_index = np.argsort(-fitness_value)  # fitness value descending from largest to least
 
             pop = pop[sorted_index, :]
@@ -219,19 +204,18 @@ class GAOptimizer(object):
                                                                         pop_size=self.pop_size,
                                                                         elite_rate=self.elite_rate,
                                                                         random_rate=self.random_rate)
-            self.crossover(N=self.N, pop=pop, pop_indices=pop_indices, pop_size=self.pop_size,
+            self.crossover(N=self.no_of_turbines, pop=pop, pop_indices=pop_indices, pop_size=self.pop_size,
                            n_parents=n_parents, parent_layouts=parent_layouts,
                            parent_pop_indices=parent_pop_indices)
 
-            self.mutation(rows=self.rows, cols=self.cols, N=self.N, pop=pop, pop_indices=pop_indices,
+            self.mutation(rows=self.rows, cols=self.cols, N=self.no_of_turbines, pop=pop, pop_indices=pop_indices,
                           pop_size=self.pop_size, mutation_rate=self.mutate_rate)
 
             print("Conversion efficiency is: %f" % (fitness_generations[gen] / total_rated_power))
             conversion_eff.append((fitness_generations[gen] / total_rated_power))
-
         end_time = datetime.now()
         run_time = (end_time - start_time).total_seconds()
-        return run_time, conversion_eff, xy_positions
+        return run_time, conversion_eff, xy_positions, lp_power
 
 
 class Turbine(object):

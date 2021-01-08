@@ -3,6 +3,7 @@ import requests
 import matplotlib.pyplot as plt
 from numpy import linalg as LA
 from matplotlib import gridspec
+import matplotlib.ticker as ticker
 import numpy as np
 import os
 
@@ -77,7 +78,7 @@ def fmt(x_in, pos):
     return str('{0:.2f}'.format(x_in))
 
 
-def plot_turbines(xc, yc, pow, plotVariable='V', scale=1.0, title=''):
+def plot_turbines(xc, yc, var, plotVariable='V', scale=1.0, title=''):
     plt.figure(figsize=(8, 5), edgecolor='gray', linewidth=2)
     ax = plt.subplot(1, 1, 1)
     ax.title.set_text('Optimized turbine positions')
@@ -87,12 +88,8 @@ def plot_turbines(xc, yc, pow, plotVariable='V', scale=1.0, title=''):
     ax.tick_params(axis='x', which='major', labelsize=15, pad=0)
     ax.tick_params(axis='y', which='major', labelsize=15, pad=0)
 
-    x = xc
-    y = yc
-    var = pow
-
     jet_map = plt.get_cmap('jet')
-    scatterPlot = ax.scatter(x, y, c=var, marker='^', s=100, cmap=jet_map, alpha=1)
+    scatterPlot = ax.scatter(xc, yc, c=var, marker='^', s=100, cmap=jet_map, alpha=1)
 
     if (max(var) - min(var)) > 0:
         colorTicks = np.linspace(min(var), max(var), 7, endpoint=True)

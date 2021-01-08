@@ -20,16 +20,18 @@ cell_width = 77.0 * 3  # unit : m
 
 # pop_size: how many individuals in the population
 # iteration: iteration times of the genetic algorithm
-optimizer = GAOptimizer(rows=rows_cells, cols=cols_cells, N=number_of_turbines,
+optimizer = GAOptimizer(rows=rows_cells, cols=cols_cells, no_of_turbines=number_of_turbines,
                         pop_size=population_size, iteration=iteration_times, cell_width=cell_width,
                         elite_rate=elite_rate, cross_rate=cross_rate, random_rate=random_rate,
                         mutate_rate=mutate_rate)
 
 optimizer.gen_init_pop()
 
-run_time, conversion_eff, final_positions = optimizer.evolve()
+run_time, conversion_eff, final_positions, layout_power = optimizer.evolve()
 
 # Plot for single experiment
 generic_plot(range(len(conversion_eff)), conversion_eff)
 
+# Plot layout best positions
+plot_turbines(final_positions[0], final_positions[1], layout_power)
 print('')

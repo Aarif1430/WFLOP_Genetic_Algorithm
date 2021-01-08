@@ -5,7 +5,7 @@ import numpy as np
 coordinate = np.dtype([('x', 'f8'), ('y', 'f8')])
 
 
-def GaussianWake(frame_coords, N, turb_diam):
+def simplified_gaussian_wake(frame_coords, N, turb_diam):
     """Return each turbine's total loss due to wake from upstream turbines"""
     # Equations and values explained in doi:10.1088/1742-6596/1037/4/042012
     turb_coords = np.asarray(list(zip(list(frame_coords[0]), list(frame_coords[1]))))
@@ -63,5 +63,5 @@ if __name__ == "__main__":
                                          1039.5, 1039.5, 1039.5, 1039.5, 1270.5, 1270.5, 1270.5, 1270.5,
                                          1732.5, 1732.5, 1732.5, 1963.5, 1963.5, 1963.5, 1963.5, 1963.5,
                                          2194.5]])
-    loss = GaussianWake(turb_coords,25,77.0)
+    loss = simplified_gaussian_wake(turb_coords,25,77.0)
     print(loss)
