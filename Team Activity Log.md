@@ -8,7 +8,10 @@
 	- Discussed changing topic due to dead APIs and further complications.
 
 29/12/2020 (10:00-11:00) - MS Teams video call
-	- Decided to stick with wind turbine optimisiation until given permission to switch topics. Currently waiting on API.
+	- Decided to stick with wind turbine optimisation until given permission to switch topics. Currently waiting on API.
 
 30/12/2020 (13:00-13:30) - MS Teams video call
 	- Received email from API creator who gave permission for us to use it. We are currently researching the topic until Arif has fixed the API. Agreed upon daily 15min stand up meetings.
+
+6/1/2021 (10:00-10:45) - MS Teams video call
+    - APIs are now up and running. Had a run through of said APIs and assigned some tasks needed to complete the project and report, such as generating figures. Also briefly discussed the report's progress.
