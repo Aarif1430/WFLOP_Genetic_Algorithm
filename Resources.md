@@ -15,6 +15,7 @@ Link to project description: [Wind Farm Layout Optimization Competition](https:/
 
 ## Videos
 - [Wind Turbine Wake Model](https://www.youtube.com/watch?v=mzTDvNMEdmY)
+- [Wind Farm Layout Optimization Test Cases](https://www.youtube.com/watch?v=clNHQIg_5po)
 
 ## Other
 - [WindFLO GitHub](https://github.com/d9w/WindFLO)
