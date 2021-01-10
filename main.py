@@ -9,7 +9,7 @@ cross_rate = 0.6
 random_rate = 0.5
 mutate_rate = 0.1
 population_size = 50  # how many layouts in a population
-iteration_times = 100  # how many iterations in a genetic algorithm run
+iteration_times = 50  # how many iterations in a genetic algorithm run
 
 # Wind farm properties
 cols_cells = 12  # number of cells each row
@@ -42,11 +42,15 @@ def test_pop_size():
                             elite_rate=elite_rate, cross_rate=cross_rate, random_rate=random_rate,
                             mutate_rate=mutate_rate)
     random_pop_performance = []
+    run_time_performance = []
     for _ in range(10):
         optimizer.gen_init_pop()
-        _, conv_eff, _, _ = optimizer.evolve()
+        run_time, conv_eff, _, _ = optimizer.evolve()
         random_pop_performance.append(np.mean(conv_eff))
+        run_time_performance.append(np.mean(run_time))
     generic_plot(range(len(random_pop_performance)), random_pop_performance)
+    generic_bar(run_time_performance, random_pop_performance, title='Run time performance',
+                xlabel='Run Time', ylabel='Conversion Efficiency', save=True, in_parent=False)
 
 
 def test_mutation_rate():
@@ -91,7 +95,7 @@ def test_crossover_rate():
                 xlabel='Crossover Rate', ylabel='Conversion Efficiency', save=True, in_parent=False)
 
 
-run_optimizer()
+# run_optimizer()
 
 test_pop_size()
 test_mutation_rate()
