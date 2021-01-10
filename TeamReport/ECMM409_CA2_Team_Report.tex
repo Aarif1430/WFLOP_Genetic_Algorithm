@@ -1,0 +1,66 @@
+\documentclass{Academic}
+
+\begin{document}
+%Easy customisation of title page
+%TC:ignore
+\myabstract{\include{abstract}}
+\renewcommand{\myTitle}{Wind farm layout optimisation using a genetic algorithm
+}
+\renewcommand{\MyAuthor}{Ryan Shaw $^{1}$, Bharath Shivamogga-Jairam$^{2}$, Filip Tobolewski$^{3}$, Mingting Hong$^{4}$, Arif Malik$^{5}$}
+\renewcommand{\MyDepartment}{Department of Computer Science}
+
+\maketitle
+%\vspace{-1.9em}\noindent\rule{\textwidth}{1pt} %add this line if not using abstract
+\onehalfspacing
+%TC:endignore
+
+\section{Introduction}
+
+The necessity of renewable sources of energy is paramount with our current climate crisis. By current estimates only around 27 {\%} of energy is from renewable sources \supercite{einstein}. This issue will be further exacerbated by the growing energy needs, which are estimated to double by the near 2050 (2). In this report we will focus on developing a model for wind farm optimisation which is a fertile area of research with practical applications that are in demand. We begin with a brief overview of the problem, where we discuss the parameters and simplifications we use. Following this we discuss the literature available on the topic and the competition where this problem was first presented. In the method section we describe the solution to the problem we present, with explanations of our algorithm. We finally conclude with a discussion of our result.
+The theoretical efficiency of wind turbines has long been known from the research undertaken by Albert Betz. The calculation below describes the theoretical limit on the extraction of power from a turbine. This calculation is based on conservation of mass and the limit we can achieve is 59.3{\%} conversion rate from kinetic energy in the wind to electrical energy produced. An extension to this topic can be found in the form of the Navier-Stokes equation, which is beyond the scope of this report due to the simplifications we make.
+
+\[P=\frac{8}{27} \thinspace \rho \nu {^3}A\]
+
+We reduced the problem complexity by considering some simplifications that can be made. We do not consider the economic costs of installing and maintaining any farm design and our approach is mainly based on following assumptions:
+\begin{itemize}
+  \item Wind speed is assumed to be the same in the area of wind farm and landfarm is assumed to be flat. which makes every turbine at same height.
+  \item The type of turbine used is to be the same for all turbines and each of them has a 127{m} rator diameter and 99{m} hub height.
+  \item Wind turbine location is characterized by its two dimensional cartesian coordinates (x,y). And the number of wind turbines being used is N.
+  \item Wind is following only in one direction and we assume turbines are perpedicular to the direction of wind.
+\end{itemize}
+
+\section{Methods}
+
+ 
+
+
+\section{Results}
+
+
+
+
+\section{Discussion}
+
+
+
+\section{Conclusion}
+
+
+
+
+%TC:ignore
+%\clearpage %add new page for references
+\singlespacing
+\emergencystretch 3em
+\hfuzz 1px
+\printbibliography[heading=bibnumbered]
+
+% \clearpage
+% \begin{appendices}
+
+% \section{Here go any appendices!}
+
+% \end{appendices}
+
+%TC:endignore
+\end{document}
