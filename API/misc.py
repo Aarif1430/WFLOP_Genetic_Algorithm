@@ -47,12 +47,17 @@ def convert_data_to_list(data):
         return [float(num) for num in data]
 
 
-def save_figure(plot, title):
-    parent_dir = os.path.dirname(os.getcwd())
+def save_figure(plot, title, in_parent_dir=True):
     plots_folder = "Plots"
-    if not os.path.exists(f'{parent_dir}/{plots_folder}'):
-        os.makedirs(f'{parent_dir}/{plots_folder}')
-    plot.savefig(f'{parent_dir}/{plots_folder}/{title}.png')
+    if in_parent_dir:
+        parent_dir = os.path.dirname(os.getcwd())
+        if not os.path.exists(f'{parent_dir}/{plots_folder}'):
+            os.makedirs(f'{parent_dir}/{plots_folder}')
+        plot.savefig(f'{parent_dir}/{plots_folder}/{title}.png')
+    else:
+        if not os.path.exists(f'{plots_folder}'):
+            os.makedirs(f'{plots_folder}')
+        plot.savefig(f'{plots_folder}/{title}.png')
 
 
 def plot_power_curve():
@@ -117,9 +122,24 @@ def generic_plot(x, y, title='Avg. Fitness Vs. Generations', xlabel='Generations
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.grid(True, linewidth=0.7, color='#ff0000', linestyle='-')
-    plt.show()
     if save:
         save_figure(plt, title)
+    plt.show()
+
+
+def generic_bar(x, y, title='Avg. Fitness Vs. Generations', xlabel='Generations', ylabel='Avg. Fitness', save=False,
+                in_parent=True):
+    print(f"Plotting:\n{x}\nAgainst:\n{y}")
+    plt.bar(x, y)
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.xticks(rotation=-45)
+    plt.ylim(min(y)-0.2, max(y)+0.05)
+    plt.tight_layout()
+    if save:
+        save_figure(plt, title, in_parent)
+    plt.close()
 
 
 if __name__ == '__main__':
