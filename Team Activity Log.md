@@ -15,3 +15,6 @@
 
 6/1/2021 (10:00-10:45) - MS Teams video call
     - APIs are now up and running. Had a run through of said APIs and assigned some tasks needed to complete the project and report, such as generating figures. Also briefly discussed the report's progress.
+    
+10/1/2021 (10:00-10:35) - MS Teams video call
+    - Discussed last few remaining tasks in order to finalise project, as well as the best way to make use of our team project.
