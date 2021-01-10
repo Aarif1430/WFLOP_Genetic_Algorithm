@@ -6,9 +6,10 @@ from datetime import datetime
 class GAOptimizer(object):
     def __init__(self, rows=21, cols=21, no_of_turbines=0, pop_size=100, iteration=20, cell_width=0, elite_rate=0.2,
                  cross_rate=0.6, random_rate=0.5, mutate_rate=0.1):
-        self.f_theta_v = np.array([[0.2], [0.3], [0.2], [0.1], [0.1], [0.1]], dtype=np.float32)
+        self.f_theta_v = np.array([[1.0]], dtype=np.float32)
         self.velocity = np.array([13.0], dtype=np.float32)  # 1
-        self.theta = np.array([0, np.pi / 3.0, 2 * np.pi / 3.0, 3 * np.pi / 3.0, 4 * np.pi / 3.0, 5 * np.pi / 3.0],
+        # Wind direction form W --> E i.e 90 degrees.
+        self.theta = np.array([3 * np.pi / 6.0],
                               dtype=np.float32)
         self.turbine = Turbine()
         self.rows = rows
@@ -32,10 +33,8 @@ class GAOptimizer(object):
     # calculate total rate power
     def get_total_power(self):
         f_p = 0.0
-        for ind_t in range(len(self.theta)):
-            for ind_v in range(len(self.velocity)):
-                f_p += self.f_theta_v[ind_t, ind_v] * self.turbine.get_power_output(self.velocity[ind_v])
-        return self.no_of_turbines * f_p
+        f_p = self.no_of_turbines * self.turbine.get_power_output(self.velocity[0])
+        return f_p
 
     def layout_power(self, wind_speed, no_of_turbines):
         power = np.zeros(no_of_turbines, dtype=np.float32)
