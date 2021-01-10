@@ -91,8 +91,8 @@ def test_crossover_rate():
                 xlabel='Crossover Rate', ylabel='Conversion Efficiency', save=True, in_parent=False)
 
 
-# run_optimizer()
+run_optimizer()
 
-# test_pop_size()
+test_pop_size()
 test_mutation_rate()
 test_crossover_rate()

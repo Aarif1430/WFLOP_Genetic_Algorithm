@@ -6,11 +6,9 @@ from datetime import datetime
 class GAOptimizer(object):
     def __init__(self, rows=21, cols=21, no_of_turbines=0, pop_size=100, iteration=20, cell_width=0, elite_rate=0.2,
                  cross_rate=0.6, random_rate=0.5, mutate_rate=0.1):
-        self.f_theta_v = np.array([[1.0]], dtype=np.float32)
         self.velocity = np.array([13.0], dtype=np.float32)  # 1
         # Wind direction form W --> E i.e 90 degrees.
-        self.theta = np.array([3 * np.pi / 6.0],
-                              dtype=np.float32)
+        self.theta = np.array([3 * np.pi / 6.0], dtype=np.float32)
         self.turbine = Turbine()
         self.rows = rows
         self.cols = cols
@@ -91,6 +89,7 @@ class GAOptimizer(object):
                     pop_indices[i, j] = null_turbine_pos
                     break
             pop_indices[i, :] = np.sort(pop_indices[i, :])
+        return pop_indices
 
     def crossover(self, N, pop, pop_indices, pop_size, n_parents,
                   parent_layouts, parent_pop_indices):
@@ -112,7 +111,7 @@ class GAOptimizer(object):
                     pop_indices[n_counter, :cross_point] = parent_pop_indices[male, :cross_point]
                     pop_indices[n_counter, cross_point:] = parent_pop_indices[female, cross_point:]
                     n_counter += 1
-        return
+        return pop_indices
 
     def select(self, pop, pop_indices, pop_size, elite_rate, random_rate):
         n_elite = int(pop_size * elite_rate)
@@ -143,22 +142,13 @@ class GAOptimizer(object):
                     ind_position[ind_pos] = ind
                     ind_pos += 1
             lp_power_accum = np.zeros(N, dtype=np.float32)  # a specific layout power accumulate
-            for ind_t in range(len(self.theta)):
-                for ind_v in range(len(self.velocity)):
-                    trans_matrix = np.array(
-                        [[np.cos(self.theta[ind_t]), -np.sin(self.theta[ind_t])],
-                         [np.sin(self.theta[ind_t]), np.cos(self.theta[ind_t])]],
-                        np.float32)
 
-                    trans_xy_position = np.matmul(trans_matrix, xy_position)
-                    speed_deficiency = simplified_gaussian_wake(trans_xy_position, N, self.turbine.rator_diameter)
+            speed_deficiency = simplified_gaussian_wake(xy_position, N, self.turbine.rator_diameter)
 
-                    actual_velocity = (1 - speed_deficiency) * self.velocity[ind_v]
-                    lp_power = self.layout_power(actual_velocity,
-                                                 N)  # total power of a specific layout specific wind speed specific theta
-                    lp_power = lp_power * self.f_theta_v[ind_t, ind_v]
-                    lp_power_accum += lp_power
-
+            actual_velocity = (1 - speed_deficiency) * self.velocity[0]
+            # total power of a specific layout specific wind speed specific theta
+            lp_power = self.layout_power(actual_velocity,N)
+            lp_power_accum += lp_power
             fitness_val[i] = np.sum(lp_power_accum)
         return fitness_val, xy_position, lp_power_accum
 
@@ -203,9 +193,9 @@ class GAOptimizer(object):
                                                                         pop_size=self.pop_size,
                                                                         elite_rate=self.elite_rate,
                                                                         random_rate=self.random_rate)
-            self.crossover(N=self.no_of_turbines, pop=pop, pop_indices=pop_indices, pop_size=self.pop_size,
-                           n_parents=n_parents, parent_layouts=parent_layouts,
-                           parent_pop_indices=parent_pop_indices)
+            self.crossover(N=self.no_of_turbines, pop=pop, pop_indices=pop_indices,
+                           pop_size=self.pop_size, n_parents=n_parents,
+                           parent_layouts=parent_layouts, parent_pop_indices=parent_pop_indices)
 
             self.mutation(rows=self.rows, cols=self.cols, N=self.no_of_turbines, pop=pop, pop_indices=pop_indices,
                           pop_size=self.pop_size, mutation_rate=self.mutate_rate)
