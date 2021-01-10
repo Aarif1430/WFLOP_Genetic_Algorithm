@@ -47,6 +47,14 @@ def convert_data_to_list(data):
         return [float(num) for num in data]
 
 
+def save_figure(plot, title):
+    parent_dir = os.path.dirname(os.getcwd())
+    plots_folder = "Plots"
+    if not os.path.exists(f'{parent_dir}/{plots_folder}'):
+        os.makedirs(f'{parent_dir}/{plots_folder}')
+    plot.savefig(f'{parent_dir}/{plots_folder}/{title}.png')
+
+
 def plot_power_curve():
     data = fetch_turbine_data_from_oedb()
     speeds = data.iloc[1].power_curve_wind_speeds
@@ -67,11 +75,7 @@ def plot_power_curve():
     plt.ylabel('Power (kW)')
     plt.tight_layout()
 
-    parent_dir = os.path.dirname(os.getcwd())
-    plots_folder = "Plots"
-    if not os.path.exists(f'{parent_dir}/{plots_folder}'):
-        os.makedirs(f'{parent_dir}/{plots_folder}')
-    plt.savefig(f'{parent_dir}/{plots_folder}/Turbine Power Curve.png')
+    save_figure(plt, 'Turbine Power Curve')
 
 
 def fmt(x_in, pos):
@@ -106,14 +110,16 @@ def plot_turbines(xc, yc, var, plotVariable='V', scale=1.0, title=''):
 
 
 # Generic Plot function
-def generic_plot(x, y):
+def generic_plot(x, y, title='Avg. Fitness Vs. Generations', xlabel='Generations', ylabel='Avg. Fitness', save=False):
     plt.figure(figsize=(8, 5))
     plt.plot(x, y)
-    plt.title('Avg. Fitness Vs. Generations')
-    plt.xlabel('Generations')
-    plt.ylabel('Avg. Fitness')
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
     plt.grid(True, linewidth=0.7, color='#ff0000', linestyle='-')
     plt.show()
+    if save:
+        save_figure(plt, title)
 
 
 if __name__ == '__main__':
