@@ -7,71 +7,70 @@ from GA_Optimizer.WindForm_GA import Turbine
 
 '''
 WIP Module
-Code for some PSO aspects were taken from:
+
+Code for some PSO aspects were used from:
 https://nathanrooy.github.io/posts/2016-08-17/simple-particle-swarm-optimization-with-python/
 '''
 
 
 class Particle:  # a particle represents a turbine layout
     def __init__(self):
-        self.position_i = []  # particle position
-        self.velocity_i = []  # particle velocity
-        self.pos_best_i = []  # best position individual
-        self.err_best_i = -1  # best error individual
-        self.err_i = -1  # error individual
-        self.velocity_i = [random.uniform(-1, 1) for i in range(num_dimensions)]
+        self.position = []
+        self.error = -1
+        self.velocity = [random.uniform(-1, 1) for _ in range(num_dimensions)]  # start with random velocity
+        # personal best position & error:
+        self.best_position = []
+        self.best_error = -1
 
     def evaluate(self):
         # TODO: get layout from particle's current position
-        self.err_i = self.cost_function(np.zeros((1, self.turbine_count), dtype=np.int32))
+        self.error = self.cost_function(np.zeros((1, self.turbine_count), dtype=np.int32))
         # check to see if the current position is an individual best
-        if self.err_i < self.err_best_i or self.err_best_i == -1:
-            self.pos_best_i = self.position_i
-            self.err_best_i = self.err_i
+        if self.error < self.best_error or self.best_error == -1:
+            self.best_position = self.position
+            self.best_error = self.error
 
     def update_velocity(self, pos_best_g):
         w = 0.5  # inertia weighting (how much to weigh the previous velocity)
-        c1 = 1  # cognitive constant
-        c2 = 2  # social constant
+        c1 = 1  # cognitive weighting (how much the personal best affects velocity)
+        c2 = 2  # social weighting (how much the global best affects velocity)
 
         for i in range(0, num_dimensions):
-            r1 = random.random()
-            r2 = random.random()
-
-            vel_cognitive = c1 * r1 * (self.pos_best_i[i] - self.position_i[i])
-            vel_social = c2 * r2 * (pos_best_g[i] - self.position_i[i])
-            self.velocity_i[i] = w * self.velocity_i[i] + vel_cognitive + vel_social
+            vel_cognitive = c1 * random.random() * (self.best_position[i] - self.position[i])
+            vel_social = c2 * random.random() * (pos_best_g[i] - self.position[i])
+            self.velocity[i] = w * self.velocity[i] + vel_cognitive + vel_social
 
     def update_position(self, bounds):
         for i in range(0, num_dimensions):
-            self.position_i[i] = self.position_i[i] + self.velocity_i[i]
+            self.position[i] = self.position[i] + self.velocity[i]
 
             # adjust maximum position if necessary
-            if self.position_i[i] > bounds[i][1]:
-                self.position_i[i] = bounds[i][1]
+            if self.position[i] > bounds[i][1]:
+                self.position[i] = bounds[i][1]
 
             # adjust minimum position if necessary
-            if self.position_i[i] < bounds[i][0]:
-                self.position_i[i] = bounds[i][0]
+            if self.position[i] < bounds[i][0]:
+                self.position[i] = bounds[i][0]
 
 
-class Swarm:  # population of layout particles
-    def __init__(self, size, iters, bounds):
-        err_best_g = -1  # best error for group
-        pos_best_g = []  # best position for group
-        swarm = [Particle() for i in range(size)]
+class Swarm:  # population of particles (turbine layouts)
+    def __init__(self, init, size, iters, bounds):
+        best_global_error = -1
+        best_global_position = []
+
+        swarm = [Particle() for _ in range(size)]
         for _ in range(iters):
             for i in range(size):
                 swarm[i].evaluate()
 
-                # determine if current particle is the best (globally)
-                if swarm[i].err_i < err_best_g or err_best_g == -1:
-                    pos_best_g = list(swarm[i].position_i)
-                    err_best_g = float(swarm[i].err_i)
+                # determine if current particle is the global best
+                if swarm[i].error < best_global_error or best_global_error == -1:
+                    best_global_position = list(swarm[i].position)
+                    best_global_error = float(swarm[i].error)
 
-                # cycle through swarm and update velocities and position
+                # iterate through swarm and update velocities and positions
                 for j in range(0, size):
-                    swarm[j].update_velocity(pos_best_g)
+                    swarm[j].update_velocity(best_global_position)
                     swarm[j].update_position(bounds)
 
 
@@ -108,7 +107,6 @@ class Layout:
         return layout
 
     def cost_function(self, power_order):
-        # Adapted fitness function from WindForm_GA.py
         xy_position = np.zeros((2, self.turbine_count), dtype=np.float32)
         cr_position = np.zeros((2, self.turbine_count), dtype=np.int32)
         ind_position = np.zeros(self.turbine_count, dtype=np.int32)
@@ -160,18 +158,11 @@ if __name__ == "__main__":
     swarm_size = 100  # number of particles in swarm
     iterations = 5
 
-    # TODO How to represent wind turbine layouts to PSO?
+    # TODO How to present wind turbine layouts to PSO?
     # With 144 potential turbine positions and 25 turbines to place there are 144C25 potential layouts
 
     initial = [int(row / 2), int(col / 2)]  # initial starting location
     boundaries = [(0, row), (0, col)]  # input bounds
     num_dimensions = len(initial)
 
-    pso = Layout(row, col, turbines, width)
-    particle_turbine_layout = pso.turbine_layout
-    # print(particle_turbine_layout)
-
-    p_o = np.zeros((1, turbines), dtype=np.int32)
-    f = pso.cost_function(p_o)
-    print("Fitness of particle")
-    print(f)
+    Swarm(initial, swarm_size, iterations, boundaries)
