@@ -7,6 +7,7 @@ import matplotlib.ticker as ticker
 import numpy as np
 import os
 
+
 plt.style.use('ggplot')
 
 
@@ -144,3 +145,4 @@ def generic_bar(x, y, title='Avg. Fitness Vs. Generations', xlabel='Generations'
 
 if __name__ == '__main__':
     plot_power_curve()
+
