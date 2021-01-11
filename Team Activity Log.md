@@ -18,3 +18,11 @@
     
 10/1/2021 (10:00-10:35) - MS Teams video call
     - Discussed last few remaining tasks in order to finalise project, as well as the best way to make use of our team project.
+
+Signed using GitHub comment
+
+    1. Arif Malik - 11-Jan-2021
+    2.
+    3.
+    4.
+    5.
